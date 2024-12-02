@@ -3,14 +3,17 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 
 fn main() {
-    let Ok(file) = fs::File::open("input") else {
-        println!("Could not read input");
-        return;
-    };
+    let (mut nums1, nums2) = read_input();
+    println!("Absolute difference: {}", calc_abs_dist(&nums1, &nums2));
+    println!("Similarity Score: {}", calc_similarity_score(&mut nums1, &nums2));
+}
+
+fn read_input() -> (Vec<i32>, Vec<i32>) {
+    let file = fs::File::open("input").expect("Could not read input");
 
     let mut nums1: Vec<i32> = Vec::new();
     let mut nums2: Vec<i32> = Vec::new();
-    
+
     for line in BufReader::new(&file).lines() {
         let Ok(line) = line else {
             continue
@@ -27,19 +30,17 @@ fn main() {
 
     nums1.sort();
     nums2.sort();
+    
+    (nums1, nums2)
+}
 
-    let sum: i32 = nums1.iter().enumerate().map(|(index, n)| {
+fn calc_abs_dist(nums1: &[i32], nums2: &[i32]) -> i32 {
+    nums1.iter().enumerate().map(|(index, n)| {
         n.abs_diff(nums2[index]) as i32
-    }).sum();
+    }).sum()
+}
 
-    println!("Absolute difference: {}", sum);
-
-    /*
-     This time, you'll need to figure out exactly how often each number from the left list appears
-     in the right list. Calculate a total similarity score by adding up each number in the left list
-     after multiplying it by the number of times that number appears in the right list.
-    */
-
+fn calc_similarity_score(nums1: &mut [i32], nums2: &[i32]) -> i32 {
     let mut map: HashMap<i32, i32> = HashMap::new();
     nums2.iter().for_each(|n| {
         map.entry(*n).and_modify(|e| *e += 1).or_insert(1);
@@ -49,7 +50,5 @@ fn main() {
         *n *= map.get(n).unwrap_or(&0);
     });
 
-    let similarity_score: i32 = nums1.iter().sum();
-
-    println!("Similarity Score: {}", similarity_score);
+    nums1.iter().sum()
 }
