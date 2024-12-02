@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 fn main() {
     let vec = read_input();
 
-    println!("Safe Reports: {}", calc_safe(&vec));
+    println!("Safe reports: {}", calc_safe(&vec));
     println!(
         "Safe after problem dampener: {}",
         calc_safe_with_dampener(&vec)
@@ -36,18 +36,14 @@ fn calc_safe(vec: &Vec<Vec<i32>>) -> i32 {
             let mut ascending = false;
             let mut descending = false;
 
-            let mut peekable = row.iter().peekable();
-            while let Some(n) = peekable.next() {
-                let Some(next) = peekable.peek() else {
-                    continue;
-                };
-
-                if n < *next {
+            let mut windows = row.windows(2);
+            while let Some([n, n2]) = windows.next() {
+                if n < n2 {
                     if descending {
                         return None;
                     }
                     ascending = true;
-                } else if n > *next {
+                } else if n > n2 {
                     if ascending {
                         return None;
                     }
@@ -56,7 +52,7 @@ fn calc_safe(vec: &Vec<Vec<i32>>) -> i32 {
                     return None;
                 }
 
-                let diff = n.abs_diff(**next);
+                let diff = n.abs_diff(*n2);
                 if diff < 1 {
                     return None;
                 } else if diff > 3 {
@@ -85,13 +81,9 @@ fn calc_safe_with_dampener(vec: &Vec<Vec<i32>>) -> i32 {
                 }
             };
 
-            let mut peekable = row.iter().peekable();
-            while let Some(n) = peekable.next() {
-                let Some(next) = peekable.peek() else {
-                    continue;
-                };
-
-                if n < *next {
+            let mut windows = row.windows(2);
+            while let Some([n, n2]) = windows.next() {
+                if n < n2 {
                     if descending {
                         if check_remove() {
                             return None;
@@ -100,7 +92,7 @@ fn calc_safe_with_dampener(vec: &Vec<Vec<i32>>) -> i32 {
                         }
                     }
                     ascending = true;
-                } else if n > *next {
+                } else if n > n2 {
                     if ascending {
                         if check_remove() {
                             return None;
@@ -117,7 +109,7 @@ fn calc_safe_with_dampener(vec: &Vec<Vec<i32>>) -> i32 {
                     }
                 }
 
-                let diff = n.abs_diff(**next);
+                let diff = n.abs_diff(*n2);
                 if diff < 1 {
                     if check_remove() {
                         return None;

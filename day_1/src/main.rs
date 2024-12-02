@@ -5,7 +5,7 @@ use std::io::{BufRead, BufReader};
 fn main() {
     let (mut nums1, nums2) = read_input();
     println!("Absolute difference: {}", calc_abs_dist(&nums1, &nums2));
-    println!("Similarity Score: {}", calc_similarity_score(&mut nums1, &nums2));
+    println!("Similarity score: {}", calc_similarity_score(&mut nums1, &nums2));
 }
 
 fn read_input() -> (Vec<i32>, Vec<i32>) {
@@ -20,10 +20,11 @@ fn read_input() -> (Vec<i32>, Vec<i32>) {
         };
 
         line.split("   ").into_iter().enumerate().for_each(|(i, n)| {
+            let n = n.trim().parse::<i32>().unwrap();
             if i % 2 == 0 {
-                nums1.push(n.trim().parse::<i32>().unwrap());
+                nums1.push(n);
             } else {
-                nums2.push(n.trim().parse::<i32>().unwrap());
+                nums2.push(n);
             }
         });
     }
