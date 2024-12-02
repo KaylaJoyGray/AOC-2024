@@ -38,28 +38,29 @@ fn calc_safe(vec: &Vec<Vec<i32>>) -> i32 {
 
             let mut peekable = row.iter().peekable();
             while let Some(n) = peekable.next() {
-                if let Some(next) = peekable.peek() {
-                    if n < *next {
-                        if descending {
-                            return None;
-                        }
-                        ascending = true;
-                    } else if n > *next {
-                        if ascending {
-                            return None;
-                        }
-                        descending = true;
-                    } else {
+                let Some(next) = peekable.peek() else {
+                    continue;
+                };
+
+                if n < *next {
+                    if descending {
                         return None;
                     }
-
-                    let diff = n.abs_diff(**next);
-
-                    if diff < 1 {
-                        return None;
-                    } else if diff > 3 {
+                    ascending = true;
+                } else if n > *next {
+                    if ascending {
                         return None;
                     }
+                    descending = true;
+                } else {
+                    return None;
+                }
+
+                let diff = n.abs_diff(**next);
+                if diff < 1 {
+                    return None;
+                } else if diff > 3 {
+                    return None;
                 }
             }
 
@@ -86,47 +87,48 @@ fn calc_safe_with_dampener(vec: &Vec<Vec<i32>>) -> i32 {
 
             let mut peekable = row.iter().peekable();
             while let Some(n) = peekable.next() {
-                if let Some(next) = peekable.peek() {
-                    if n < *next {
-                        if descending {
-                            if check_remove() {
-                                continue;
-                            } else {
-                                return None;
-                            }
-                        }
-                        ascending = true;
-                    } else if n > *next {
-                        if ascending {
-                            if check_remove() {
-                                continue;
-                            } else {
-                                return None;
-                            }
-                        }
-                        descending = true;
-                    } else {
+                let Some(next) = peekable.peek() else {
+                    continue;
+                };
+
+                if n < *next {
+                    if descending {
                         if check_remove() {
                             continue;
                         } else {
                             return None;
                         }
                     }
-
-                    let diff = n.abs_diff(**next);
-
-                    if diff < 1 {
+                    ascending = true;
+                } else if n > *next {
+                    if ascending {
                         if check_remove() {
                             continue;
                         } else {
                             return None;
                         }
-                    } else if diff > 3 {
-                        if check_remove() {
-                            continue;
-                        } else {
-                            return None;
-                        }
+                    }
+                    descending = true;
+                } else {
+                    if check_remove() {
+                        continue;
+                    } else {
+                        return None;
+                    }
+                }
+
+                let diff = n.abs_diff(**next);
+                if diff < 1 {
+                    if check_remove() {
+                        continue;
+                    } else {
+                        return None;
+                    }
+                } else if diff > 3 {
+                    if check_remove() {
+                        continue;
+                    } else {
+                        return None;
                     }
                 }
             }
