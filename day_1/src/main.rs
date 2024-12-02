@@ -1,34 +1,32 @@
-use std::{env, fs};
+use std::{fs};
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader};
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let Some(file_name) = args.get(1) else {
-        println!("Expected file name");
-        return;
-    };
-
-    let Ok(file) = fs::read_to_string(file_name) else {
-        println!("Invalid file name: {}", file_name);
+    let Ok(file) = fs::File::open("input") else {
+        println!("Could not read input");
         return;
     };
 
     let mut nums1: Vec<i32> = Vec::new();
     let mut nums2: Vec<i32> = Vec::new();
+    
+    for line in BufReader::new(&file).lines() {
+        let Ok(line) = line else {
+            continue
+        };
 
-    file.split([' ', '\n']).filter_map(|s| { s.trim().parse::<i32>().ok() }).enumerate().for_each(|(index, n)| {
-       if index % 2 == 0 {
-            nums1.push(n);
-       } else {
-           nums2.push(n);
-       }
-    });
+        line.split("   ").into_iter().enumerate().for_each(|(i, n)| {
+            if i % 2 == 0 {
+                nums1.push(n.trim().parse::<i32>().unwrap());
+            } else {
+                nums2.push(n.trim().parse::<i32>().unwrap());
+            }
+        });
+    }
 
     nums1.sort();
     nums2.sort();
-    
-    assert_eq!(nums1.len(), nums2.len());
 
     let sum: i32 = nums1.iter().enumerate().map(|(index, n)| {
         n.abs_diff(nums2[index]) as i32
@@ -44,10 +42,7 @@ fn main() {
 
     let mut map: HashMap<i32, i32> = HashMap::new();
     nums2.iter().for_each(|n| {
-       match map.get(n) {
-           None => { map.insert(*n, 1); }
-           Some(v) => { map.insert(*n, v + 1);}
-       }
+        map.entry(*n).and_modify(|e| *e += 1).or_insert(1);
     });
 
     nums1.iter_mut().for_each(|n| {
