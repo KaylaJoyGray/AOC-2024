@@ -10,14 +10,14 @@ fn main() {
     println!("Sum of mul instructions with do/don't: {}", parse_2(input))
 }
 
-fn parse(input: &str) -> i64 {
+fn parse(input: &str) -> i32 {
     let regex = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
 
     regex
         .captures_iter(input)
         .map(|c| c.extract())
-        .filter_map(|(_, [a, b])| Some(a.parse::<i64>().unwrap() * b.parse::<i64>().unwrap()))
-        .collect::<Vec<i64>>()
+        .filter_map(|(_, [a, b])| Some(a.parse::<i32>().unwrap() * b.parse::<i32>().unwrap()))
+        .collect::<Vec<i32>>()
         .iter()
         .sum()
 }
@@ -72,7 +72,7 @@ impl CommandStack {
     }
 }
 
-fn multiply(op1: Option<i64>, op2: Option<i64>) -> i64 {
+fn multiply(op1: Option<i32>, op2: Option<i32>) -> i32 {
     if let Some(op1) = op1 {
         if let Some(op2) = op2 {
             return op1 * op2;
@@ -82,13 +82,13 @@ fn multiply(op1: Option<i64>, op2: Option<i64>) -> i64 {
     0
 }
 
-fn parse_2(input: &str) -> i64 {
+fn parse_2(input: &str) -> i32 {
     // The do() instruction enables future mul instructions.
     // The don't() instruction disables future mul instructions.
     //
     // Only the most recent do() or don't() instruction applies. At the beginning of the program, mul instructions are enabled.
 
-    let mut result: i64 = 0;
+    let mut result: i32 = 0;
 
     let mut enabled: bool = true;
     let mut mul: bool = false;
@@ -96,8 +96,8 @@ fn parse_2(input: &str) -> i64 {
     let mut cmd_stack = CommandStack::default();
     let mut num_stack: Vec<char> = Vec::new();
 
-    let mut op1: Option<i64> = None;
-    let mut op2: Option<i64> = None;
+    let mut op1: Option<i32> = None;
+    let mut op2: Option<i32> = None;
 
     for c in input.chars() {
         if c == '(' {
@@ -114,7 +114,7 @@ fn parse_2(input: &str) -> i64 {
             }
         } else if c == ')' {
             if enabled && mul {
-                op2 = num_stack.iter().collect::<String>().parse::<i64>().ok();
+                op2 = num_stack.iter().collect::<String>().parse::<i32>().ok();
                 num_stack.clear();
                 result += multiply(op1, op2);
             }
@@ -122,7 +122,7 @@ fn parse_2(input: &str) -> i64 {
             cmd_stack.clear();
             mul = false;
         } else if c == ',' && mul {
-            op1 = num_stack.iter().collect::<String>().parse::<i64>().ok();
+            op1 = num_stack.iter().collect::<String>().parse::<i32>().ok();
             num_stack.clear();
         } else if c.is_digit(10) {
             num_stack.push(c);
