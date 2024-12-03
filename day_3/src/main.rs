@@ -121,11 +121,9 @@ fn parse_2(input: &str) -> i64 {
             num_stack.clear();
             cmd_stack.clear();
             mul = false;
-        } else if c == ',' {
-            if mul {
-                op1 = num_stack.iter().collect::<String>().parse::<i64>().ok();
-                num_stack.clear();
-            }
+        } else if c == ',' && mul {
+            op1 = num_stack.iter().collect::<String>().parse::<i64>().ok();
+            num_stack.clear();
         } else if c.is_digit(10) {
             num_stack.push(c);
         } else if c.is_alphanumeric() || c == '\'' {
