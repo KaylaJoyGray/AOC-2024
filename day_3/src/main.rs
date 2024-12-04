@@ -1,26 +1,28 @@
-use regex::Regex;
+// use regex::Regex;
 
 fn main() {
-    // xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))
-    // Adding up the result of each instruction produces 161 (2*4 + 5*5 + 11*8 + 8*5).
-
     let input = include_str!("../input");
+    let mut parser = Parser::new();
 
-    println!("Sum of mul instructions: {}", parse(input));
-    println!("Sum of mul instructions with do/don't: {}", parse_2(input))
+    println!("Sum of mul instructions: {}", parser.parse(input, false));
+
+    println!(
+        "Sum of mul instructions with do/don't: {}",
+        parser.parse(input, true)
+    )
 }
 
-fn parse(input: &str) -> i32 {
-    let regex = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
-
-    regex
-        .captures_iter(input)
-        .map(|c| c.extract())
-        .filter_map(|(_, [a, b])| Some(a.parse::<i32>().unwrap() * b.parse::<i32>().unwrap()))
-        .collect::<Vec<i32>>()
-        .iter()
-        .sum()
-}
+// fn parse_regex(input: &str) -> i32 {
+//     let regex = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
+//
+//     regex
+//         .captures_iter(input)
+//         .map(|c| c.extract())
+//         .filter_map(|(_, [a, b])| Some(a.parse::<i32>().unwrap() * b.parse::<i32>().unwrap()))
+//         .collect::<Vec<i32>>()
+//         .iter()
+//         .sum()
+// }
 
 #[derive(Debug)]
 enum Command {
@@ -40,11 +42,9 @@ impl CommandStack {
         self.chars.push(c);
     }
 
-    fn resolve_command(&mut self) -> Command {
+    fn resolve_command(&self) -> Command {
         let str = self.chars.iter().collect::<String>();
         let len = str.chars().count();
-
-        self.chars.clear();
 
         if len > 4 {
             if &str[len - 5..] == "don't" {
@@ -72,68 +72,106 @@ impl CommandStack {
     }
 }
 
-fn multiply(op1: Option<i32>, op2: Option<i32>) -> i32 {
-    if let Some(op1) = op1 {
-        if let Some(op2) = op2 {
-            return op1 * op2;
-        }
-    }
-
-    0
+#[derive(Default)]
+struct NumStack {
+    chars: Vec<char>,
 }
 
-fn parse_2(input: &str) -> i32 {
-    // The do() instruction enables future mul instructions.
-    // The don't() instruction disables future mul instructions.
-    //
-    // Only the most recent do() or don't() instruction applies. At the beginning of the program, mul instructions are enabled.
+impl NumStack {
+    fn push(&mut self, c: char) {
+        self.chars.push(c);
+    }
 
-    let mut result: i32 = 0;
+    fn resolve_number(&self) -> Option<i32> {
+        self.chars.iter().collect::<String>().parse::<i32>().ok()
+    }
 
-    let mut enabled: bool = true;
-    let mut mul: bool = false;
+    fn clear(&mut self) {
+        self.chars.clear()
+    }
+}
 
-    let mut cmd_stack = CommandStack::default();
-    let mut num_stack: Vec<char> = Vec::new();
+struct Parser {
+    enabled: bool,
+    mul: bool,
 
-    let mut op1: Option<i32> = None;
-    let mut op2: Option<i32> = None;
+    cmd_stack: CommandStack,
+    num_stack: NumStack,
 
-    for c in input.chars() {
-        if c == '(' {
-            let cmd = cmd_stack.resolve_command();
-            match cmd {
-                Command::Mul => mul = true,
-                Command::Do => enabled = true,
-                Command::Dont => enabled = false,
-                Command::Invalid => {
-                    num_stack.clear();
-                    cmd_stack.clear();
-                    mul = false;
-                }
-            }
-        } else if c == ')' {
-            if enabled && mul {
-                op2 = num_stack.iter().collect::<String>().parse::<i32>().ok();
-                num_stack.clear();
-                result += multiply(op1, op2);
-            }
-            num_stack.clear();
-            cmd_stack.clear();
-            mul = false;
-        } else if c == ',' && mul {
-            op1 = num_stack.iter().collect::<String>().parse::<i32>().ok();
-            num_stack.clear();
-        } else if c.is_digit(10) {
-            num_stack.push(c);
-        } else if c.is_alphanumeric() || c == '\'' {
-            cmd_stack.push(c);
-        } else {
-            num_stack.clear();
-            cmd_stack.clear();
-            mul = false;
+    op1: Option<i32>,
+    op2: Option<i32>,
+}
+
+impl Parser {
+    fn new() -> Self {
+        Self {
+            enabled: true,
+            mul: false,
+            cmd_stack: CommandStack::default(),
+            num_stack: NumStack::default(),
+            op1: None,
+            op2: None,
         }
     }
 
-    result
+    fn parse(&mut self, input: &str, allow_non_mul: bool) -> i32 {
+        let mut result = 0;
+
+        for c in input.chars() {
+            if c == '(' {
+                if allow_non_mul {
+                    match self.cmd_stack.resolve_command() {
+                        Command::Mul => self.mul = true,
+                        Command::Do => self.enabled = true,
+                        Command::Dont => self.enabled = false,
+                        Command::Invalid => self.reset(),
+                    }
+                } else {
+                    match self.cmd_stack.resolve_command() {
+                        Command::Mul => self.mul = true,
+                        _ => self.reset(),
+                    }
+                }
+                self.cmd_stack.clear();
+            } else if c == ')' {
+                if self.enabled && self.mul {
+                    self.op2 = self.num_stack.resolve_number();
+                    self.num_stack.clear();
+                    result += self.multiply();
+                }
+                self.reset()
+            } else if c == ',' && self.mul {
+                self.op1 = self.num_stack.resolve_number();
+                self.num_stack.clear();
+            } else if c.is_digit(10) {
+                self.num_stack.push(c);
+            } else if c.is_alphabetic() || c == '\'' {
+                self.cmd_stack.push(c);
+            } else {
+                self.reset()
+            }
+        }
+
+        self.enabled = true;
+        self.reset();
+        result
+    }
+
+    fn multiply(&self) -> i32 {
+        if let Some(op1) = self.op1 {
+            if let Some(op2) = self.op2 {
+                return op1 * op2;
+            }
+        }
+
+        0
+    }
+
+    fn reset(&mut self) {
+        self.num_stack.clear();
+        self.cmd_stack.clear();
+        self.mul = false;
+        self.op1 = None;
+        self.op2 = None;
+    }
 }
