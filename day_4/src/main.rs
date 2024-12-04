@@ -5,7 +5,7 @@ fn main() {
 
     let (rows, cols) = get_dims(input);
 
-    let map = read_into_map(input, rows, cols);
+    let map = read_into_map(input, cols);
 
     let count = word_count(&map, rows, cols);
 
@@ -19,7 +19,7 @@ fn get_dims(input: &str) -> (u32, u32) {
     )
 }
 
-fn read_into_map(input: &str, rows: u32, cols: u32) -> BTreeMap<(u32, u32), char> {
+fn read_into_map(input: &str, cols: u32) -> BTreeMap<(u32, u32), char> {
     let mut chars: BTreeMap<(u32, u32), char> = BTreeMap::new();
 
     for (index, c) in input
@@ -71,7 +71,7 @@ fn find_word(
         return 0;
     };
 
-    *previous = format!("{}{}", previous, current);
+    *previous += &current.to_string();
 
     if previous == "XMAS" {
         return 1;
@@ -104,7 +104,7 @@ mod test {
     #[test]
     fn test_read_into_map() {
         let str = "162\n789\n304";
-        let map = read_into_map(str, 3, 3);
+        let map = read_into_map(str, 3);
         assert_eq!(*map.get(&(0, 0)).unwrap(), '1');
         assert_eq!(*map.get(&(2, 0)).unwrap(), '3');
         assert_eq!(*map.get(&(0, 2)).unwrap(), '2');
