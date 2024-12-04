@@ -71,7 +71,7 @@ fn find_word(
         return 0;
     };
 
-    *previous += &current.to_string();
+    previous.push(*current);
 
     if previous == "XMAS" {
         return 1;
