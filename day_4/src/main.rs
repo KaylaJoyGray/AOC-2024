@@ -9,7 +9,11 @@ fn main() {
 
     let count = word_count(&map, rows, cols);
 
-    println!("{}", count);
+    println!("XMAS count: {}", count);
+
+    let count2 = word_count_2(&map, rows, cols);
+
+    println!("MAS crossed count: {}", count2);
 }
 
 fn get_dims(input: &str) -> (u32, u32) {
@@ -89,6 +93,59 @@ fn find_word(
     }
 
     find_word(nr as u32, nc as u32, direction, map, previous)
+}
+
+const DIR_1: (i32, i32) = (1, 1);
+const DIR_2: (i32, i32) = (1, -1);
+
+fn word_count_2(map: &BTreeMap<(u32, u32), char>, rows: u32, cols: u32) -> i32 {
+    let mut count = 0;
+
+    for row in 0..rows {
+        for col in 0..cols {
+            let (r1, c1) = DIR_1;
+            let (r2, c2) = DIR_2;
+
+            if find_word_2(row, col, &(r1, c1), &map, &mut "".to_string()) {
+                if find_word_2(row, col + 2, &(r2, c2), &map, &mut "".to_string()) {
+                    count += 1;
+                }
+            }
+        }
+    }
+
+    count
+}
+
+fn find_word_2(
+    row: u32,
+    col: u32,
+    direction: &(i32, i32),
+    map: &BTreeMap<(u32, u32), char>,
+    previous: &mut String,
+) -> bool {
+    let Some(current) = map.get(&(row, col)) else {
+        return false;
+    };
+
+    previous.push(*current);
+
+    if previous == "MAS" || previous == "SAM" {
+        return true;
+    }
+
+    if previous != "M" && previous != "MA" && previous != "S" && previous != "SA" {
+        return false;
+    }
+
+    let (dr, dc) = direction;
+    let (nr, nc) = (row as i32 + dr, col as i32 + dc);
+
+    if nr < 0 || nc < 0 {
+        return false;
+    }
+
+    find_word_2(nr as u32, nc as u32, direction, map, previous)
 }
 
 #[cfg(test)]
