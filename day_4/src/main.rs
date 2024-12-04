@@ -38,16 +38,7 @@ fn read_into_map(input: &str, cols: u32) -> BTreeMap<(u32, u32), char> {
     chars
 }
 
-const REL_NEIGHBORS: [(i32, i32); 8] = [
-    (0, 1),
-    (1, 0),
-    (0, -1),
-    (-1, 0),
-    (1, -1),
-    (-1, 1),
-    (1, 1),
-    (-1, -1),
-];
+const REL_NEIGHBORS: [(i32, i32); 4] = [(0, 1), (1, 0), (1, -1), (1, 1)];
 
 fn word_count(map: &BTreeMap<(u32, u32), char>, rows: u32, cols: u32) -> i32 {
     let mut count = 0;
@@ -77,11 +68,17 @@ fn find_word(
 
     previous.push(*current);
 
-    if previous == "XMAS" {
+    if previous == "XMAS" || previous == "SAMX" {
         return 1;
     }
 
-    if previous != "X" && previous != "XM" && previous != "XMA" {
+    if previous != "X"
+        && previous != "XM"
+        && previous != "XMA"
+        && previous != "S"
+        && previous != "SA"
+        && previous != "SAM"
+    {
         return 0;
     }
 
