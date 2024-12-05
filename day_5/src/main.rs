@@ -53,7 +53,7 @@ fn get_sum(lookup: &BTreeMap<i32, Vec<i32>>, updates: &Vec<Vec<i32>>) -> (i32, V
     let sum: i32 = updates
         .iter()
         .filter_map(|update| {
-            let mut previous: Vec<i32> = Vec::new();
+            let mut previous: Vec<i32> = Vec::with_capacity(update.len());
             let count = update
                 .iter()
                 .rev()
