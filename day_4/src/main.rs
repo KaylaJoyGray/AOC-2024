@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::string::ToString;
 
 fn main() {
     let input = include_str!("../input").trim();
