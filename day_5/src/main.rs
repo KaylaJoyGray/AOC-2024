@@ -1,3 +1,4 @@
+use std::cmp::Ordering::{Equal, Greater, Less};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -20,9 +21,13 @@ fn main() {
     let mut updates: Vec<Vec<i32>> = Vec::new();
 
     parse_input(&file, &mut lookup, &mut updates);
-    let (sum, invalid_updates) = get_sum(&lookup, &updates);
+    let (sum, mut invalid_updates) = get_sum(&lookup, &updates);
 
     println!("Sum of middle pages: {}", sum);
+
+    let sum_2 = sort_and_get_sum(&lookup, &mut invalid_updates);
+
+    println!("Sum of sorted middle pages: {}", sum_2);
 }
 
 fn parse_input(input: &File, lookup: &mut BTreeMap<i32, Vec<i32>>, updates: &mut Vec<Vec<i32>>) {
@@ -79,9 +84,31 @@ fn get_sum(lookup: &BTreeMap<i32, Vec<i32>>, updates: &Vec<Vec<i32>>) -> (i32, V
             }
         })
         .map(|n| *n)
-        .collect::<Vec<i32>>()
-        .iter()
         .sum();
 
     (sum, invalid)
+}
+
+fn sort_and_get_sum(lookup: &BTreeMap<i32, Vec<i32>>, updates: &mut Vec<Vec<i32>>) -> i32 {
+    updates.iter_mut().for_each(|update| {
+        update.sort_by(|a, b| {
+            if let Some(matches) = lookup.get(a) {
+                if matches.contains(b) {
+                    Greater
+                } else {
+                    Less
+                }
+            } else {
+                Equal
+            }
+        });
+    });
+
+    updates
+        .iter()
+        .filter_map(|update| {
+            let middle = update.len() / 2;
+            update.get(middle)
+        })
+        .sum::<i32>()
 }
