@@ -8,10 +8,14 @@ fn main() {
     // Populate a lookup table. The right part of the rule will map to all matching left parts.
     // So entry 53 will contain all numbers that must be printed before 53
     //
-    // Iterate through each update in reverse order, and maintain a visited list of visited numbers.
+    // Iterate through each update in reverse order, and maintain a list of visited numbers.
     // If any part of the entry for the current number is in visited, then the update is invalid.
     // If the front is reached without triggering the above condition, then the update is valid.
     //
+
+    // Part 2 Approach:
+    // Modified the function from part 1 to collect and return all invalid updates.
+    // Sorted with a custom comparison function and the lookup table from part 1.
 
     let Ok(file) = File::open("input") else {
         panic!("Could not open input file")
