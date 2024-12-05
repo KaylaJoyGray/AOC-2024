@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::string::ToString;
 
 fn main() {
     let input = include_str!("../input").trim();
@@ -55,6 +56,9 @@ fn word_count(map: &BTreeMap<(u32, u32), char>, rows: u32, cols: u32) -> i32 {
     count
 }
 
+const SOLVED_XMAS: [&str; 2] = ["XMAS", "SAMX"];
+const VALID_XMAS_SEQ: [&str; 6] = ["X", "XM", "XMA", "S", "SA", "SAM"];
+
 fn find_word(
     row: u32,
     col: u32,
@@ -68,17 +72,11 @@ fn find_word(
 
     previous.push(*current);
 
-    if previous == "XMAS" || previous == "SAMX" {
+    if SOLVED_XMAS.contains(&previous.as_ref()) {
         return 1;
     }
 
-    if previous != "X"
-        && previous != "XM"
-        && previous != "XMA"
-        && previous != "S"
-        && previous != "SA"
-        && previous != "SAM"
-    {
+    if !VALID_XMAS_SEQ.contains(&previous.as_ref()) {
         return 0;
     }
 
@@ -114,6 +112,9 @@ fn word_count_2(map: &BTreeMap<(u32, u32), char>, rows: u32, cols: u32) -> i32 {
     count
 }
 
+const SOLVED_MAS: [&str; 2] = ["MAS", "SAM"];
+const VALID_MAS_SEQ: [&str; 4] = ["M", "MA", "S", "SA"];
+
 fn find_word_2(
     row: u32,
     col: u32,
@@ -127,11 +128,11 @@ fn find_word_2(
 
     previous.push(*current);
 
-    if previous == "MAS" || previous == "SAM" {
+    if SOLVED_MAS.contains(&previous.as_ref()) {
         return true;
     }
 
-    if previous != "M" && previous != "MA" && previous != "S" && previous != "SA" {
+    if !VALID_MAS_SEQ.contains(&previous.as_ref()) {
         return false;
     }
 
