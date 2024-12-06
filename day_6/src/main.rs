@@ -1,7 +1,11 @@
 use crate::Direction::{East, North, South, West};
-use std::collections::{BTreeMap, BTreeSet};
+use rayon::iter::ParallelIterator;
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator};
+use std::collections::BTreeSet;
 
-/*  Part 1 Approach:
+/*
+
+    Part 1 Approach:
 
     Read input into graph:
     . = open node
@@ -15,23 +19,27 @@ use std::collections::{BTreeMap, BTreeSet};
     Exit condition: next node is out of bounds.
     Return count.
 
+    Part 2 Approach:
+
+    Try inserting an obstacle.
+    Test for a cycle using DFS.
+    Return number of cycles.
+
 */
 
 fn main() {
     let input = include_str!("../input");
 
-    let (graph, start, start_direction) = read_input(input).unwrap();
-    let count = get_count(1, start, start_direction, &mut graph.clone());
+    let (mat, start, start_direction) = read_input(input).unwrap();
+    let count = get_count(1, start, start_direction, &mut mat.clone());
 
     println!("Distinct positions visited: {}", count);
 
-    let (mat, start, start_direction) = read_input_2(input).unwrap();
+    let (mat, start, start_direction) = read_input(input).unwrap();
     let cycles = get_cycles(&mat, start, start_direction);
 
     println!("Cycles detected: {}", cycles);
 }
-
-const DIRECTIONS: [char; 4] = ['^', 'v', '>', '<'];
 
 #[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq)]
 enum Direction {
@@ -85,83 +93,7 @@ enum InputReadError {
     NoStart,
 }
 
-fn read_input(
-    input: &str,
-) -> Result<(BTreeMap<(u32, u32), char>, (u32, u32), Direction), InputReadError> {
-    let mut map = BTreeMap::new();
-    let mut start = None;
-    let mut start_direction = None;
-
-    input.lines().enumerate().for_each(|(row, line)| {
-        line.split("")
-            .filter_map(|s| s.parse::<char>().ok())
-            .enumerate()
-            .for_each(|(col, c)| {
-                map.entry((row as u32, col as u32)).or_insert(c);
-                if DIRECTIONS.contains(&c) {
-                    start = Some((row as u32, col as u32));
-                    start_direction = Direction::try_from(c).ok();
-                }
-            })
-    });
-
-    if let Some(start) = start {
-        if let Some(start_direction) = start_direction {
-            return Ok((map, start, start_direction));
-        }
-    }
-
-    Err(InputReadError::NoStart)
-}
-
-fn get_next_in_dir(start: &(u32, u32), dir: &Direction) -> Option<(u32, u32)> {
-    let (row, col) = *start;
-    let (dr, dc) = dir.get_vec();
-    let (nr, nc) = (row as i32 + dr, col as i32 + dc);
-
-    if nr < 0 || nc < 0 {
-        return None;
-    }
-
-    Some((nr as u32, nc as u32))
-}
-
-fn get_count(
-    mut count: i32,
-    start: (u32, u32),
-    dir: Direction,
-    map: &mut BTreeMap<(u32, u32), char>,
-) -> i32 {
-    let Some(c) = map.get_mut(&start) else {
-        return count;
-    };
-
-    if *c == '.' {
-        count += 1;
-    }
-
-    *c = '+';
-
-    let Some((nr, nc)) = get_next_in_dir(&start, &dir) else {
-        return count;
-    };
-
-    let Some(next_c) = map.get(&(nr, nc)) else {
-        return count;
-    };
-
-    let dir = if *next_c == '#' { dir.turn() } else { dir };
-
-    let Some((nr, nc)) = get_next_in_dir(&start, &dir) else {
-        return count;
-    };
-
-    get_count(count, (nr, nc), dir, map)
-}
-
-fn read_input_2(
-    input: &str,
-) -> Result<(Vec<Vec<char>>, (usize, usize), Direction), InputReadError> {
+fn read_input(input: &str) -> Result<(Vec<Vec<char>>, (usize, usize), Direction), InputReadError> {
     let rows = input.lines().count();
     let cols = input.lines().next().iter().count();
 
@@ -210,22 +142,85 @@ fn get_node(at: (usize, usize), matrix: &Vec<Vec<char>>) -> Result<char, NodeErr
     Ok(*char)
 }
 
-fn get_cycles(mat: &Vec<Vec<char>>, start: (usize, usize), direction: Direction) -> i32 {
-    let mut count = 0;
+fn get_count(
+    mut count: i32,
+    start: (usize, usize),
+    dir: Direction,
+    mat: &mut Vec<Vec<char>>,
+) -> i32 {
+    let Ok(c) = get_node(start, &mat) else {
+        return count;
+    };
 
-    mat.iter().enumerate().for_each(|(row_n, row)| {
-        row.iter().enumerate().for_each(|(col_n, c)| {
-            if *c != '#' && Direction::try_from(*c).is_err() {
-                let block = (row_n, col_n);
-                count += if find_cycle(&mat.clone(), block, start, direction, &mut BTreeSet::new())
-                {
-                    1
-                } else {
+    if c == '.' {
+        count += 1;
+    }
+
+    let (row, col) = start;
+    if let Some(row) = mat.get_mut(row) {
+        if let Some(c) = row.get_mut(col) {
+            *c = '+';
+        }
+    }
+
+    let Some((nr, nc)) = get_next_in_dir(&start, dir) else {
+        return count;
+    };
+
+    let Ok(next_c) = get_node((nr, nc), mat) else {
+        return count;
+    };
+
+    let dir = if next_c == '#' { dir.turn() } else { dir };
+
+    let Some((nr, nc)) = get_next_in_dir(&start, dir) else {
+        return count;
+    };
+
+    get_count(count, (nr, nc), dir, mat)
+}
+
+fn get_next_in_dir(start: &(usize, usize), dir: Direction) -> Option<(usize, usize)> {
+    let (row, col) = *start;
+    let (dr, dc) = dir.get_vec();
+    let (nr, nc) = (row as i32 + dr, col as i32 + dc);
+
+    if nr < 0 || nc < 0 {
+        return None;
+    }
+
+    Some((nr as usize, nc as usize))
+}
+
+fn get_cycles(mat: &Vec<Vec<char>>, start: (usize, usize), direction: Direction) -> i32 {
+    let count: i32 = mat
+        .par_iter()
+        .enumerate()
+        .map(|(row_n, row)| {
+            let add: i32 = row
+                .par_iter()
+                .enumerate()
+                .map(|(col_n, c)| {
+                    if *c != '#' && Direction::try_from(*c).is_err() {
+                        let block = (row_n, col_n);
+                        return if find_cycle(
+                            &mat.clone(),
+                            block,
+                            start,
+                            direction,
+                            &mut BTreeSet::new(),
+                        ) {
+                            1
+                        } else {
+                            0
+                        };
+                    }
                     0
-                };
-            }
-        });
-    });
+                })
+                .sum();
+            add
+        })
+        .sum();
 
     count
 }
@@ -258,7 +253,7 @@ fn get_next_node_2(
     start: (usize, usize),
     dir: Direction,
 ) -> Option<((usize, usize), Direction)> {
-    let Some((nr, nc)) = get_next_in_dir_2(start, dir) else {
+    let Some((nr, nc)) = get_next_in_dir(&start, dir) else {
         return None;
     };
 
@@ -273,16 +268,4 @@ fn get_next_node_2(
     };
 
     get_next_node_2(mat, blocked, (nr, nc), new_dir)
-}
-
-fn get_next_in_dir_2(start: (usize, usize), dir: Direction) -> Option<(usize, usize)> {
-    let (row, col) = start;
-    let (dr, dc) = dir.get_vec();
-    let (nr, nc) = (row as i32 + dr, col as i32 + dc);
-
-    if nr < 0 || nc < 0 {
-        return None;
-    }
-
-    Some((nr as usize, nc as usize))
 }
