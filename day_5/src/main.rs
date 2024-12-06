@@ -8,9 +8,9 @@ fn main() {
     // Populate a lookup table. The right part of the rule will map to all matching left parts.
     // I.E entry 53 will contain all page numbers that must be printed before page 53.
     //
-    // Iterate through each update in reverse order, and maintain a list of visited numbers.
+    // Iterate through each update, and maintain a list of visited numbers.
     // If any part of the entry for the current number is in visited, then the update is invalid.
-    // If the front is reached without triggering the above condition, then the update is valid.
+    // If the end is reached without triggering the above condition, then the update is valid.
     //
 
     // Part 2 Approach:
@@ -50,9 +50,9 @@ fn parse_input(input: &File, lookup: &mut BTreeMap<i32, Vec<i32>>, updates: &mut
             let left = split.next().expect("Invalid rule encountered");
             let right = split.last().expect("Invalid rule encountered");
             lookup
-                .entry(right)
-                .and_modify(|entry| entry.push(left))
-                .or_insert(vec![left]);
+                .entry(left)
+                .and_modify(|entry| entry.push(right))
+                .or_insert(vec![right]);
         }
     });
 }
@@ -66,7 +66,6 @@ fn get_sum(lookup: &BTreeMap<i32, Vec<i32>>, updates: &Vec<Vec<i32>>) -> (i32, V
             let mut previous: Vec<i32> = Vec::with_capacity(update.len());
             let count = update
                 .iter()
-                .rev()
                 .take_while(|n| {
                     if let Some(matches) = lookup.get(n) {
                         for p in &previous {
@@ -99,9 +98,9 @@ fn sort_and_get_sum(lookup: &BTreeMap<i32, Vec<i32>>, updates: &mut Vec<Vec<i32>
         update.sort_by(|a, b| {
             if let Some(matches) = lookup.get(a) {
                 if matches.contains(b) {
-                    Greater
-                } else {
                     Less
+                } else {
+                    Greater
                 }
             } else {
                 Equal
