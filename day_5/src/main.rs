@@ -15,7 +15,7 @@ fn main() {
 
     // Part 2 Approach:
     // Modified the function from part 1 to collect and return all invalid updates.
-    // Sorted with a custom comparison function and the lookup table from part 1.
+    // Sorted with a custom comparison function using the lookup table from part 1.
     //
 
     let Ok(file) = File::open("input") else {
