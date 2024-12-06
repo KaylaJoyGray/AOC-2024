@@ -1,5 +1,6 @@
 use crate::Direction::{East, North, South, West};
 use std::collections::{BTreeMap, BTreeSet};
+
 /*  Part 1 Approach:
 
     Read input into graph:
@@ -32,7 +33,7 @@ fn main() {
 
 const DIRECTIONS: [char; 4] = ['^', 'v', '>', '<'];
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Ord, PartialOrd, PartialEq, Eq)]
 enum Direction {
     North,
     South,
@@ -234,15 +235,15 @@ fn find_cycle(
     blocked: (usize, usize),
     start: (usize, usize),
     direction: Direction,
-    nodes: &mut BTreeSet<(usize, usize)>,
+    nodes: &mut BTreeSet<((usize, usize), Direction)>,
 ) -> bool {
     let mut start = start;
     let mut direction = direction;
     while let Some((node, new_dir)) = get_next_node_2(mat, blocked, start, direction) {
-        if nodes.contains(&node) {
+        if nodes.contains(&(node, new_dir)) {
             return true;
         } else {
-            nodes.insert(node);
+            nodes.insert((node, new_dir));
             direction = new_dir;
             start = node;
         }
